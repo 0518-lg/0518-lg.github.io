@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>项目发布顺序抽签（含负责人）</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "微软雅黑", sans-serif;
+        }
+        body {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 15px;
+            background: #f7f8fa;
+        }
+        .title {
+            text-align: center;
+            font-size: 22px;
+            font-weight: bold;
+            margin: 20px 0;
+            color: #333;
+        }
+        .tip {
+            text-align: center;
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        .project-list {
+            background: #fff;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 25px;
+        }
+        .project-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 10px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .project-item:last-child {
+            border-bottom: none;
+        }
+        .project-info {
+            flex: 1;
+        }
+        .project-name {
+            font-size: 15px;
+            color: #333;
+            font-weight: 500;
+        }
+        .leader {
+            font-size: 13px;
+            color: #888;
+            margin-top: 2px;
+        }
+        .draw-btn {
+            padding: 6px 14px;
+            background: #07c160;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .draw-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .order-num {
+            margin-right: 10px;
+            color: #ff4d4f;
+            font-weight: bold;
+            font-size: 15px;
+            min-width: 40px;
+            text-align: right;
+        }
+        .result-box {
+            background: #fff;
+            border-radius: 10px;
+            padding: 20px;
+        }
+        .result-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        .result-item {
+            font-size: 15px;
+            line-height: 2;
+            padding-left: 5px;
+        }
+        .reset-box {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .reset-btn {
+            padding: 10px 30px;
+            background: #ff4d4f;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="title">32个项目发布顺序抽签（含负责人）</div>
+    <div class="tip">负责人点击自己项目后的【抽签】按钮，自动分配发布顺位</div>
+
+    <!-- 项目清单列表（含负责人） -->
+    <div class="project-list" id="projectList"></div>
+
+    <!-- 重置按钮 -->
+    <div class="reset-box">
+        <button class="reset-btn" id="resetBtn">重置所有抽签</button>
+    </div>
+
+    <!-- 最终顺序汇总 -->
+    <div class="result-box">
+        <div class="result-title">已抽签发布顺序（按1→32排序）</div>
+        <div id="finalResult"></div>
+    </div>
+
+    <script>
+        // ====================== 在这里替换成你的32个项目+负责人 ======================
+        // 格式：{ name: "项目名", leader: "负责人姓名" }，共32个，不要漏写、多写
+        const projects = [
+            { name: "项目1", leader: "负责人A" },
+            { name: "项目2", leader: "负责人B" },
+            { name: "项目3", leader: "负责人C" },
+            { name: "项目4", leader: "负责人D" },
+            { name: "项目5", leader: "负责人E" },
+            { name: "项目6", leader: "负责人F" },
+            { name: "项目7", leader: "负责人G" },
+            { name: "项目8", leader: "负责人H" },
+            { name: "项目9", leader: "负责人I" },
+            { name: "项目10", leader: "负责人J" },
+            { name: "项目11", leader: "负责人K" },
+            { name: "项目12", leader: "负责人L" },
+            { name: "项目13", leader: "负责人M" },
+            { name: "项目14", leader: "负责人N" },
+            { name: "项目15", leader: "负责人O" },
+            { name: "项目16", leader: "负责人P" },
+            { name: "项目17", leader: "负责人Q" },
+            { name: "项目18", leader: "负责人R" },
+            { name: "项目19", leader: "负责人S" },
+            { name: "项目20", leader: "负责人T" },
+            { name: "项目21", leader: "负责人U" },
+            { name: "项目22", leader: "负责人V" },
+            { name: "项目23", leader: "负责人W" },
+            { name: "项目24", leader: "负责人X" },
+            { name: "项目25", leader: "负责人Y" },
+            { name: "项目26", leader: "负责人Z" },
+            { name: "项目27", leader: "负责人AA" },
+            { name: "项目28", leader: "负责人BB" },
+            { name: "项目29", leader: "负责人CC" },
+            { name: "项目30", leader: "负责人DD" },
+            { name: "项目31", leader: "负责人EE" },
+            { name: "项目32", leader: "负责人FF" }
+        ];
+        // ============================================================================
+
+        // 抽签逻辑（不变，无需修改）
+        let usedNumbers = [];
+        let resultMap = {};
+        const total = projects.length;
+
+        // 渲染项目清单（新增负责人显示）
+        function renderProjects() {
+            const listEl = document.getElementById('projectList');
+            listEl.innerHTML = '';
+            projects.forEach((item, index) => {
+                const projectItem = document.createElement('div');
+                projectItem.className = 'project-item';
+                projectItem.innerHTML = `
+                    <div class="project-info">
+                        <div class="project-name">${item.name}</div>
+                        <div class="leader">负责人：${item.leader}</div>
+                    </div>
+                    <span class="order-num" id="num-${index}"></span>
+                    <button class="draw-btn" data-index="${index}" id="btn-${index}">抽签</button>
+                `;
+                listEl.appendChild(projectItem);
+            });
+
+            // 绑定点击事件
+            document.querySelectorAll('.draw-btn').forEach(btn => {
+                btn.addEventListener('click', drawOrder);
+            });
+        }
+
+        // 抽取顺位（不变，无需修改）
+        function drawOrder(e) {
+            const index = e.target.dataset.index;
+            const projectItem = projects[index];
+            const projectName = projectItem.name;
+
+            if (resultMap[projectName]) {
+                alert('该项目已完成抽签！');
+                return;
+            }
+
+            // 生成不重复随机数（1~32）
+            let num;
+            do {
+                num = Math.floor(Math.random() * total) + 1;
+            } while (usedNumbers.includes(num));
+
+            usedNumbers.push(num);
+            resultMap[projectName] = num;
+
+            // 更新页面：显示顺位、禁用按钮
+            document.getElementById(`num-${index}`).innerText = `第${num}顺位`;
+            document.getElementById(`btn-${index}`).disabled = true;
+            renderResult();
+        }
+
+        // 渲染最终排序（不变，无需修改）
+        function renderResult() {
+            const resultEl = document.getElementById('finalResult');
+            resultEl.innerHTML = '';
+
+            // 按顺位从小到大排序
+            const sorted = Object.entries(resultMap).sort((a, b) => a[1] - b[1]);
+
+            sorted.forEach(([name, num]) => {
+                // 匹配对应负责人，显示在结果中
+                const leader = projects.find(item => item.name === name).leader;
+                const div = document.createElement('div');
+                div.className = 'result-item';
+                div.innerText = `第${num}顺位：${name}（负责人：${leader}）`;
+                resultEl.appendChild(div);
+            });
+        }
+
+        // 重置功能（不变，无需修改）
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            usedNumbers = [];
+            resultMap = {};
+            renderProjects();
+            renderResult();
+            alert('已重置所有抽签结果');
+        });
+
+        // 初始化页面
+        renderProjects();
+    </script>
+</body>
+</html>
